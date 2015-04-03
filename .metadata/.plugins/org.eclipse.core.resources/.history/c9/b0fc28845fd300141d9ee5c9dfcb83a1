@@ -1,0 +1,83 @@
+package com.anemortalkid.cs.data.records;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.SC2Race;
+
+public class CSL2sTeamRecord {
+
+	private Set<CSLPlayer> players;
+
+	private Map<Set<SC2Race>, TeamRecord> recordsByRaces = new HashMap<Set<SC2Race>, TeamRecord>();
+
+	public CSL2sTeamRecord(CSLPlayer p1, CSLPlayer p2) {
+		players = new HashSet<CSLPlayer>();
+		players.add(p1);
+		players.add(p2);
+	}
+
+	public CSL2sTeamRecord(Set<CSLPlayer> players) {
+		this.players = new HashSet<CSLPlayer>();
+		this.players.addAll(players);
+	}
+
+	public TeamRecord getRecordByRaces(Set<SC2Race> races) {
+		return recordsByRaces.get(races);
+	}
+
+	private void addRecord(TeamRecord record) {
+		recordsByRaces.put(record.getRaces(), record);
+	}
+	
+	public void logMatchRecord(CSLTeamMatchRecord matchRecord)
+	{
+		TeamRecord teamRecord = recordsByRaces.get(matchRecord.getOpponentRaces());
+		if(teamRecord == null)
+		{
+			teamRecord = new TeamRecord(matchRecord.getOpponentRaces());
+			addRecord(teamRecord);
+		}
+		if(matchRecord.wonMatch())
+			teamRecord.addWin();
+		else
+			teamRecord.addLoss();
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+
+		StringBuilder recordBuilder = new StringBuilder();
+		int totalwins = 0;
+		int totalloss = 0;
+
+		Set<Entry<Set<SC2Race>, TeamRecord>> entrySet = recordsByRaces
+				.entrySet();
+		for (Entry<Set<SC2Race>, TeamRecord> entry : entrySet) {
+			TeamRecord tr = entry.getValue();
+			totalwins += tr.getWins();
+			totalloss += tr.getLosses();
+			recordBuilder.append(tr);
+			recordBuilder.append("\n");
+		}
+		StringBuilder playersBuilder = new StringBuilder();
+		Iterator<CSLPlayer> iterator = players.iterator();
+		while (iterator.hasNext()) {
+			CSLPlayer player = iterator.next();
+			playersBuilder.append(player.toString());
+			if (iterator.hasNext())
+				playersBuilder.append(" & ");
+		}
+
+		sb.append("Players: " + playersBuilder.toString() + "\n");
+		sb.append("Overall: (" + totalwins + "-" + totalloss + ")\n");
+		sb.append(recordBuilder.toString());
+		return sb.toString();
+	}
+}

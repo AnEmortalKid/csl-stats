@@ -1,0 +1,55 @@
+package com.anemortalkid.csl.pagescrub;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import com.anemortalkid.cs.data.records.ICSLMatchRecord;
+
+public class TeamMatchHistoryScrubber implements IScrubber<String> {
+
+	private Document csldoc;
+	private String teamURL;
+
+	public TeamMatchHistoryScrubber(String teamURL) {
+		this.teamURL = teamURL;
+		matchIds = new ArrayList<String>();
+	}
+
+	public List<String> scrub() {
+		List<String> matchIds = new ArrayList<String>();
+		try {
+			csldoc = Jsoup.connect(teamURL).userAgent("Mozilla").get();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (csldoc == null)
+			return matchIds;
+
+		Elements leagues = csldoc.getElementsByAttributeValue("id", "league");
+		Element matchHistoryElem = leagues.get(1);
+		Elements rowGroups = matchHistoryElem.getElementsByAttributeValue(
+				"class", "row group");
+		for (Element rowGroup : rowGroups) {
+			Element teamAnchor = rowGroup.getElementsByTag("a").first();
+			String href = teamAnchor.attr("href");
+			String matchId = href.replaceAll("/sc2/matches/", "");
+			matchIds.add(matchId);
+		}
+		return matchIds;
+	}
+
+	public static void main(String[] args) {
+		TeamMatchHistoryScrubber teamMatchHistoryScrubber = new TeamMatchHistoryScrubber(
+				"http://cstarleague.com/sc2/teams/3332");
+		System.out
+				.println("MatchIDS:" + teamMatchHistoryScrubber.getMatchIDs());
+	}
+
+}

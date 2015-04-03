@@ -1,0 +1,10 @@
+package com.anemortalkid.csl.data.wrappers;
+
+/**
+ * TODO: finish -> A wrapper for a List<CSLPlayer>
+ * @author JMonterrubio
+ *
+ */
+public class CSLTeamRoster {
+
+}

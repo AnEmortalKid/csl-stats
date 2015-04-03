@@ -1,0 +1,87 @@
+package com.anemortalkid.csl.stats;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+import com.anemortalkid.csl.data.CSLTeamData;
+import com.anemortalkid.csl.datastore.CSLDataStore;
+
+public class CSLTeamStatsGather {
+
+	private OutputStream debugStream;
+
+	private String teamID;
+
+	private boolean gathering;
+	private String schoolName;
+	private CSLTeamData teamData;
+
+	/**
+	 * 
+	 * @param schoolName
+	 * @param teamID
+	 *            the numeric ID for the team, found in the team URL link
+	 *            {@code http://cstarleague.com/sc2/teams/####} where ### is the
+	 *            id for a given team
+	 */
+	public CSLTeamStatsGather(String schoolName, String teamID) {
+		this(schoolName, teamID, null);
+	}
+
+	public CSLTeamStatsGather(String schoolName, String teamID,
+			OutputStream debugStream) {
+		this.schoolName = schoolName;
+		this.debugStream = debugStream;
+		this.teamID = teamID;
+	}
+
+	/**
+	 * Runs the thing
+	 */
+	public void gatherStats() {
+		if (gathering)
+			return;
+
+		gathering = true;
+
+		// Check to see if we need to load
+		CSLTeamData storedData = CSLDataStore.loadFromDatastore(teamID);
+		if (storedData != null)
+			teamData = storedData;
+		else
+			teamData = new CSLTeamData(schoolName, teamID);
+
+		teamData.gatherMatchHistory();
+		gathering = false;
+	}
+
+	private void writeToStream(String str) {
+		if (debugStream != null)
+			try {
+				debugStream.write(str.getBytes());
+				debugStream.flush();
+			} catch (IOException e) {
+				// shh
+			}
+	}
+
+	public static void main(String[] args) {
+		CSLTeamStatsGather cslTeamStatsGather = new CSLTeamStatsGather(
+				"SanJoseState", "3332", System.out);
+		cslTeamStatsGather.gatherStats();
+		cslTeamStatsGather.printRecords();
+	}
+
+	public CSLTeamData getTeamData() {
+		return teamData;
+	}
+
+	public String getTeamRecord() {
+		return teamData.teamRecordToString();
+	}
+
+	private void printRecords() {
+		String teamRecordToString = teamData.teamRecordToString();
+		System.out.println(teamRecordToString);
+	}
+}

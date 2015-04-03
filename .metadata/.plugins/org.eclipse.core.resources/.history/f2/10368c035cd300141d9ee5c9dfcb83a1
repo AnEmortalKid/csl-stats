@@ -1,0 +1,57 @@
+package com.anemortalkid.csl.pagescrub;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.util.CSLPageScrubUtils;
+
+public class TeamRosterScrubber implements IScrubber<CSLPlayer> {
+
+	private String teamURL;
+	private Document csldoc;
+
+
+	public TeamRosterScrubber(String teamURL) {
+		this.teamURL = teamURL;
+		
+	}
+
+	public List<CSLPlayer> scrub() {
+		List<CSLPlayer> playerList = new ArrayList<CSLPlayer>();
+		try {
+			csldoc = Jsoup.connect(teamURL).userAgent("Mozilla").get();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (csldoc == null)
+			return playerList;
+
+		Element roster = csldoc.getElementById("roster");
+		Elements rowGroups = roster.getElementsByAttributeValue("class",
+				"row group");
+		for (Element rowGroup : rowGroups) {
+			Element playerAnchor = rowGroup.getElementsByTag("a").first();
+			playerList.add(CSLPageScrubUtils.getCSLPlayerFromA(playerAnchor));
+		}
+	}
+
+	public List<CSLPlayer> getPlayerList() {
+		return playerList;
+	}
+
+	public static void main(String[] args) {
+		TeamRosterScrubber teamRosterScrubber = new TeamRosterScrubber(
+				"http://cstarleague.com/sc2/teams/3332");
+		for (CSLPlayer p : teamRosterScrubber.getPlayerList())
+			System.out.println(p);
+	}
+
+}

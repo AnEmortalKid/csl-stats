@@ -1,0 +1,63 @@
+package com.anemortalkid.csl.pagescrub;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+public class TeamMatchHistoryScrubber implements IScrubber<String> {
+
+	private static final String TEAM_URL = "http://cstarleague.com/sc2/teams/";
+	private Document csldoc;
+	private String teamID;
+	
+	/**
+	 * Constructs a {@link TeamMatchHistoryScrubber} which returns the match
+	 * history for the given team
+	 * 
+	 * @param teamID
+	 *            the numeric ID for the team, found in the team URL link
+	 *            {@code http://cstarleague.com/sc2/teams/####} where ### is the
+	 *            id for a given team
+	 * 
+	 */
+	public TeamMatchHistoryScrubber(String teamID) {
+		this.teamID = teamID;
+	}
+
+	public List<String> scrub() {
+		List<String> matchIds = new ArrayList<String>();
+		try {
+			csldoc = Jsoup.connect(TEAM_URL+teamID).userAgent("Mozilla").get();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (csldoc == null)
+			return matchIds;
+
+		Elements leagues = csldoc.getElementsByAttributeValue("id", "league");
+		Element matchHistoryElem = leagues.get(1);
+		Elements rowGroups = matchHistoryElem.getElementsByAttributeValue(
+				"class", "row group");
+		for (Element rowGroup : rowGroups) {
+			Element teamAnchor = rowGroup.getElementsByTag("a").first();
+			String href = teamAnchor.attr("href");
+			String matchId = href.replaceAll("/sc2/matches/", "");
+			matchIds.add(matchId);
+		}
+		return matchIds;
+	}
+
+	public static void main(String[] args) {
+		TeamMatchHistoryScrubber teamMatchHistoryScrubber = new TeamMatchHistoryScrubber(
+				"http://cstarleague.com/sc2/teams/3332");
+		List<String> matchIds = teamMatchHistoryScrubber.scrub();
+		System.out.println("MatchIDS:" + matchIds);
+	}
+
+}

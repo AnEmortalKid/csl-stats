@@ -1,0 +1,20 @@
+package com.anemortalkid.cs.data.records;
+
+public abstract class AbstractCSLMatchRecord implements ICSLMatchRecord {
+
+	private boolean matchWon;
+	 MatchRecordType matchRecordType;
+
+	public boolean wonMatch() {
+		return matchWon;
+	}
+
+	public void setMatchWon(boolean matchWon) {
+		this.matchWon = matchWon;
+	}
+
+	public MatchRecordType getMatchRecordType() {
+		return matchRecordType;
+	}
+
+}

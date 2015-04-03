@@ -1,0 +1,138 @@
+package com.anemortalkid.csl.stats;
+
+public enum CSLTeamURLEnum {
+
+	/**
+	 * West Division
+	 */
+	//
+	UCI("UC Irvine", "http://cstarleague.com/sc2/teams/3581"),
+	//
+	UCB("UC Berkeley", "http://cstarleague.com/sc2/teams/6183"),
+	//
+	UW("University of Washington", "http://cstarleague.com/sc2/teams/8764"),
+	//
+	SJSU("San Jose State", "http://cstarleague.com/sc2/teams/3332"),
+	//
+	UCD("University of California, Davis",
+			"http://cstarleague.com/sc2/teams/1494"),
+	//
+	UCSD("University of California, San Diego",
+			"http://cstarleague.com/sc2/teams/9437"),
+	//
+	UCLA("UCLA", "http://cstarleague.com/sc2/teams/1708"),
+	//
+	UAZ("University of Arizona", "http://cstarleague.com/sc2/teams/9299"),
+
+	/**
+	 * MidWest
+	 */
+	//
+	GIT("Georgia Institute of Technology",
+			"http://cstarleague.com/sc2/teams/4267"),
+	//
+	UC("University of Chicago", "http://cstarleague.com/sc2/teams/4639"),
+	//
+	OSU("Ohio State", "http://cstarleague.com/sc2/teams/3424"),
+	//
+	UTA("UT Austin", "http://cstarleague.com/sc2/teams/7853"),
+	//
+	Rice("Rice University", "http://cstarleague.com/sc2/teams/3087"),
+	//
+	UWS("U Wisoconsin-stout", "http://cstarleague.com/sc2/teams/8844"),
+	//
+	ColoradoBoulder("University of Colorado, Boulder",
+			"http://cstarleague.com/sc2/teams/7465"),
+	//
+	DUKE("Duke University", "http://cstarleague.com/sc2/teams/2588"),
+
+	/**
+	 * Northeast
+	 */
+	//
+	Waterloo("University of Waterloo", "http://cstarleague.com/sc2/teams/3373"),
+	//
+	Ryerson("Ryerson Univesity", "http://cstarleague.com/sc2/teams/3261"),
+	//
+	Toronto("University of Toronto", "http://cstarleague.com/sc2/teams/5656"),
+	//
+	McMaster("McMaster University", "http://cstarleague.com/sc2/teams/4607"),
+	//
+	UMCP("University of Maryland, College Park",
+			"http://cstarleague.com/sc2/teams/4708"),
+	//
+	PSU("Pennsylvania State", "http://cstarleague.com/sc2/teams/6699"),
+	//
+	Drexel("Drexel University", "http://cstarleague.com/sc2/teams/7643"),
+	//
+	Dalhousie("Dalhousie Unviersity", "http://cstarleague.com/sc2/teams/9571"),
+
+	/**
+	 * East
+	 */
+	UF("University of Florida", "http://cstarleague.com/sc2/teams/2397"),
+	//
+	GWU("George Washington", "http://cstarleague.com/sc2/teams/1746"),
+	//
+	NYU("New York University", "http://cstarleague.com/sc2/teams/2328"),
+	//
+	MIT("MIT", "http://cstarleague.com/sc2/teams/4260"),
+	//
+	UCF("University of Central Florida",
+			"http://cstarleague.com/sc2/teams/4424"),
+	//
+	RIT("Rocherster Institute of Technology",
+			"http://cstarleague.com/sc2/teams/2443"),
+	//
+	CU("Columbia University", "http://cstarleague.com/sc2/teams/7106"),
+	//
+	UVA("University of Virginia", "http://cstarleague.com/sc2/teams/8116"),
+
+	/**
+	 * Division 2
+	 */
+	UNM("University of New Mexico", "http://cstarleague.com/sc2/teams/6395"),
+
+	;
+
+	private String schoolName;
+	private String cslTeamURL;
+
+	private CSLTeamURLEnum(String schoolName, String cslTeamURL) {
+		this.schoolName = schoolName;
+		this.cslTeamURL = cslTeamURL;
+	}
+
+	@Override
+	public String toString() {
+		return schoolName;
+	}
+
+	/**
+	 * An url in the form
+	 * 
+	 * <pre>
+	 * http://cstarleague.com/sc2/teams/####
+	 * </pre>
+	 * 
+	 * @return a url in the form {@code http://cstarleague.com/sc2/teams/####}
+	 */
+	@Deprecated
+	public String getCslTeamURL() {
+		return cslTeamURL;
+	}
+
+	public String getCSLTeamID() {
+		return cslTeamURL.replaceAll("http://cstarleague.com/sc2/teams/", "");
+	}
+
+	/**
+	 * The name of the school that this team represents
+	 * 
+	 * @return
+	 */
+	public String getSchoolName() {
+		return schoolName;
+	}
+
+}

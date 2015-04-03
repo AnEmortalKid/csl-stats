@@ -1,0 +1,22 @@
+package com.anemortalkid.csl.data;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
+
+public class CSLTeamMatchHistory {
+
+	private Set<String> matchIDs;
+
+	public Set<String> getTeamMatchHistory() {
+		return Collections.unmodifiableSet(getMatchIds());
+	}
+
+	private Set<String> getMatchIds() {
+		return matchIDs == null ? matchIDs = new TreeSet<String>() : matchIDs;
+	}
+
+	private boolan addMatchId(String matchId) {
+		getMatchIds().add(matchId);
+	}
+}

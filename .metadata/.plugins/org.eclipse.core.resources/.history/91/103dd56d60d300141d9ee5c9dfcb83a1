@@ -1,0 +1,187 @@
+package com.anemortalkid.csl.stats;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.anemortalkid.cs.data.records.CSL1sPlayerRecord;
+import com.anemortalkid.cs.data.records.CSL2sTeamRecord;
+import com.anemortalkid.cs.data.records.CSLSingleMatchRecord;
+import com.anemortalkid.cs.data.records.CSLTeamMatchRecord;
+import com.anemortalkid.cs.data.records.RaceRecord;
+import com.anemortalkid.cs.data.records.TeamRecord;
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.CSLTeamData;
+import com.anemortalkid.csl.data.SC2Race;
+import com.anemortalkid.csl.pagescrub.MatchHistoryScrubber;
+import com.anemortalkid.csl.pagescrub.TeamMatchHistoryScrubber;
+import com.anemortalkid.csl.pagescrub.TeamRosterScrubber;
+
+//TODO: add caching
+public class CSLTeamStatsGather {
+
+	private static final String MATCHURL = "http://cstarleague.com/sc2/matches/";
+	private OutputStream debugStream;
+
+	private String teamID;
+
+	private boolean gathering;
+	private String teamURL;
+	private String schoolName;
+
+	public CSLTeamStatsGather(String schoolName, String teamURL) {
+		this(schoolName, teamURL, null);
+	}
+
+	public CSLTeamStatsGather(String schoolName, String teamURL, OutputStream debugStream) {
+		this.schoolName = schoolName;
+		this.teamURL = teamURL;
+		this.debugStream = debugStream;
+		this.teamID = teamURL.replaceAll("http://cstarleague.com/sc2/teams/",
+				"");
+	}
+
+	/**
+	 * Runs the thing
+	 */
+	public void gatherStats() {
+		if (gathering)
+			return;
+
+		gathering = true;
+		CSLTeamData teamData = new CSLTeamData(schoolName, cslTeamURLID)
+
+		writeToStream("Creating Individual Records...\n");
+		scrubbers = scrubMatchHistory(teamURL);
+		parseSinglesRecords();
+		generateIndividualRecords();
+		generateTeamsRecords();
+		gathering = false;
+	}
+
+	private void writeToStream(String str) {
+		if (debugStream != null)
+			try {
+				debugStream.write(str.getBytes());
+				debugStream.flush();
+			} catch (IOException e) {
+				// shh
+			}
+	}
+
+	private void initStructs() {
+		singlesRecordByPlayer = new HashMap<CSLPlayer, CSL1sPlayerRecord>();
+		teamRecordByPlayers = new HashMap<Set<CSLPlayer>, CSL2sTeamRecord>();
+		singlesRecords = new ArrayList<CSLSingleMatchRecord>();
+		teamsRecords = new ArrayList<CSLTeamMatchRecord>();
+		twosTeams = new HashSet<Set<CSLPlayer>>();
+	}
+
+	private List<MatchHistoryScrubber> scrubMatchHistory(String teamURL) {
+		writeToStream("Gathering Match History IDS...\n");
+		List<String> matchIds = new TeamMatchHistoryScrubber(teamURL)
+				.getMatchIDs();
+		writeToStream("IDs Found: " + matchIds + "\n");
+		writeToStream("Creating scrubbers..." + "\n");
+		List<MatchHistoryScrubber> scrubbers = new ArrayList<MatchHistoryScrubber>();
+		for (String matchId : matchIds) {
+			String matchURLFull = MATCHURL + matchId;
+			writeToStream("Parsing: " + matchURLFull + "\n");
+			scrubbers.add(new MatchHistoryScrubber(matchURLFull, teamID));
+		}
+		return scrubbers;
+	}
+
+	private void parseSinglesRecords() {
+		writeToStream("Creating Records...\n");
+		for (MatchHistoryScrubber mhs : scrubbers) {
+			List<CSLSingleMatchRecord> singlesGames = mhs.getSinglesGames();
+			singlesRecords.addAll(singlesGames);
+			if (mhs.getTwosRecord() != null) {
+				teamsRecords.add(mhs.getTwosRecord());
+			}
+		}
+	}
+
+	private void generateIndividualRecords() {
+		writeToStream("Creating Singles Records...\n");
+		for (CSLSingleMatchRecord singleMatchRecord : singlesRecords) {
+			CSLPlayer player = singleMatchRecord.getPlayer();
+			SC2Race vsRace = singleMatchRecord.getOpponentRace();
+			CSL1sPlayerRecord playerRecord = singlesRecordByPlayer.get(player);
+			if (playerRecord == null) {
+				playerRecord = new CSL1sPlayerRecord(player);
+				singlesRecordByPlayer.put(player, playerRecord);
+			}
+			RaceRecord raceRecord = playerRecord.getRecordByRace(vsRace);
+			if (raceRecord == null) {
+				raceRecord = new RaceRecord(vsRace);
+				playerRecord.addRecord(raceRecord);
+			}
+			if (singleMatchRecord.wonMatch()) {
+				raceRecord.addWin();
+			} else {
+				raceRecord.addLoss();
+			}
+		}
+	}
+
+	private void generateTeamsRecords() {
+		writeToStream("Creating teams Records...\n");
+
+		for (CSLTeamMatchRecord teamMatchRecord : teamsRecords) {
+			Set<CSLPlayer> players = teamMatchRecord.getPlayers();
+			twosTeams.add(players);
+			Set<SC2Race> races = teamMatchRecord.getOpponentRaces();
+			CSL2sTeamRecord teamRecord = teamRecordByPlayers.get(players);
+			if (teamRecord == null) {
+				teamRecord = new CSL2sTeamRecord(players);
+				teamRecordByPlayers.put(players, teamRecord);
+			}
+			TeamRecord racesRecord = teamRecord.getRecordByRaces(races);
+			if (racesRecord == null) {
+				racesRecord = new TeamRecord(races);
+				teamRecord.addRecord(racesRecord);
+			}
+			if (teamMatchRecord.wonMatch()) {
+				racesRecord.addWin();
+			} else {
+				racesRecord.addLoss();
+			}
+		}
+	}
+
+	public String recordsToString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("-- 1v1 Records -- \n");
+		for (CSLPlayer player : teamRoster) {
+			CSL1sPlayerRecord singlesRecord = singlesRecordByPlayer.get(player);
+			if (singlesRecord == null)
+				sb.append("Player: " + player + " has no 1v1 record.\n");
+			else
+				sb.append(singlesRecord + "\n");
+		}
+		sb.append("-- 2v2 Records --\n");
+		for (Set<CSLPlayer> team : twosTeams) {
+			CSL2sTeamRecord teamRecord = teamRecordByPlayers.get(team);
+			sb.append(teamRecord + "\n");
+		}
+		return sb.toString();
+	}
+
+	public void printRecords() {
+		System.out.println(recordsToString());
+	}
+
+	public static void main(String[] args) {
+		CSLTeamStatsGather cslTeamStatsGather = new CSLTeamStatsGather(
+				"http://cstarleague.com/sc2/teams/3332", System.out);
+		cslTeamStatsGather.gatherStats();
+		cslTeamStatsGather.printRecords();
+	}
+}

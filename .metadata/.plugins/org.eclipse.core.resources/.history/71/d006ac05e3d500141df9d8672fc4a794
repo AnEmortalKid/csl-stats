@@ -1,0 +1,117 @@
+package com.anemortalkid.csl.data.records;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.SC2Race;
+import com.anemortalkid.csl.data.SC2TeamRaces;
+
+public class CSL2sTeamRecord {
+
+	private Set<CSLPlayer> players;
+
+	private Map<SC2TeamRaces, ConcreteRecord> recordsByRaces = new HashMap<SC2TeamRaces, ConcreteRecord>();
+
+	private int totalWins;
+
+	private int totalLosses;
+
+	public CSL2sTeamRecord(CSLPlayer p1, CSLPlayer p2) {
+		players = new HashSet<CSLPlayer>();
+		players.add(p1);
+		players.add(p2);
+	}
+
+	public CSL2sTeamRecord(Set<CSLPlayer> players) {
+		this.players = new HashSet<CSLPlayer>();
+		this.players.addAll(players);
+	}
+
+	public ConcreteRecord getRecordByRaces(Set<SC2Race> races) {
+		return recordsByRaces.get(races);
+	}
+
+	private void addRecord(Set<SC2Race> races, ConcreteRecord record) {
+		recordsByRaces.put(races, record);
+	}
+
+	public Set<CSLPlayer> getPlayers() {
+		return players;
+	}
+
+	public Map<SC2TeamRaces, ConcreteRecord> getRecordsByRaces() {
+		return recordsByRaces;
+	}
+
+	public void setRecordsByRaces(
+			Map<SC2TeamRaces, ConcreteRecord> recordsByRaces) {
+		this.recordsByRaces = recordsByRaces;
+	}
+
+	public void logMatchRecord(CSLTeamMatchRecord matchRecord) {
+		ConcreteRecord teamRecord = recordsByRaces.get(matchRecord
+				.getOpponentRaces());
+		if (teamRecord == null) {
+			teamRecord = new ConcreteRecord();
+			addRecord(matchRecord.getOpponentRaces(), teamRecord);
+		}
+		if (matchRecord.wonMatch()) {
+			teamRecord.addWin();
+			totalWins++;
+		} else {
+			teamRecord.addLoss();
+			totalLosses++;
+		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+
+		StringBuilder recordBuilder = new StringBuilder();
+
+		Set<Entry<SC2TeamRaces, ConcreteRecord>> entrySet = recordsByRaces
+				.entrySet();
+		for (Entry<Set<SC2Race>, ConcreteRecord> entry : entrySet) {
+			ConcreteRecord tr = entry.getValue();
+			String vsHeader = entry.getKey().isEmpty() ? "Forfeited" : entry
+					.getKey().toString();
+			recordBuilder.append(vsHeader + " : " + tr);
+			recordBuilder.append("\n");
+		}
+		StringBuilder playersBuilder = new StringBuilder();
+		Iterator<CSLPlayer> iterator = players.iterator();
+		while (iterator.hasNext()) {
+			CSLPlayer player = iterator.next();
+			playersBuilder.append(player.toString());
+			if (iterator.hasNext())
+				playersBuilder.append(" & ");
+		}
+
+		sb.append("Players: " + playersBuilder.toString() + "\n");
+		sb.append("Overall: (" + totalWins + "-" + totalLosses + ")\n");
+		sb.append(recordBuilder.toString());
+		return sb.toString();
+	}
+
+	public int getTotalLosses() {
+		return totalLosses;
+	}
+
+	public int getTotalWins() {
+		return totalWins;
+	}
+
+	public void setTotalLosses(int totalLosses) {
+		this.totalLosses = totalLosses;
+	}
+
+	public void setTotalWins(int totalWins) {
+		this.totalWins = totalWins;
+	}
+}

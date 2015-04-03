@@ -1,0 +1,6 @@
+package com.anemortalkid.csl.pagescrub;
+
+public interface IScrubber<S> {
+
+	List<S> scrub();
+}

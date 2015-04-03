@@ -1,0 +1,56 @@
+package com.anemortalkid.csl.pagescrub;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.util.CSLPageScrubUtils;
+import com.anemortalkid.csl.data.wrappers.CSLTeamRoster;
+
+public class TeamRosterScrubber implements IScrubber<CSLTeamRoster> {
+
+	private static final String TEAM_URL = "http://cstarleague.com/sc2/teams/";
+	private String teamID;
+	private Document csldoc;
+
+	public TeamRosterScrubber(String teamID) {
+		this.teamID = teamID;
+
+	}
+
+	public CSLTeamRoster scrub() {
+		CSLTeamRoster teamRoster = new CSLTeamRoster(teamID);
+		try {
+			csldoc = Jsoup.connect(TEAM_URL+teamID).userAgent("Mozilla").get();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (csldoc == null)
+			return teamRoster;
+
+		Element roster = csldoc.getElementById("roster");
+		Elements rowGroups = roster.getElementsByAttributeValue("class",
+				"row group");
+		for (Element rowGroup : rowGroups) {
+			Element playerAnchor = rowGroup.getElementsByTag("a").first();
+			teamRoster.addPlayer(CSLPageScrubUtils.getCSLPlayerFromA(playerAnchor));
+		}
+		return teamRoster;
+	}
+
+	public static void main(String[] args) {
+		TeamRosterScrubber teamRosterScrubber = new TeamRosterScrubber(
+				"http://cstarleague.com/sc2/teams/3332");
+		List<CSLPlayer> list = teamRosterScrubber.scrub().getTeamRoster();
+		for (CSLPlayer p : list)
+			System.out.println(p);
+	}
+
+}

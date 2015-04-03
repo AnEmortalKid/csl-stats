@@ -1,0 +1,30 @@
+package com.anemortalkid.csl.data;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public enum SC2TeamRaces {
+
+	// zt
+	ZERG_TERRAN,
+
+	// zp
+	ZERG_PROTOSS,
+
+	// zr
+	ZERG_RANDOM,
+
+	// tp
+	TERRAN_PROTOSS,
+
+	// tr
+	TERRAN_RANDOM,
+
+	// pr
+	PROTOSS_RANDOM, ;
+
+	public static SC2TeamRaces getRacesFor(Set<SC2Race> races) {
+		List<String> sorted = new ArrayList<String>();
+		sorted.addAll(races);
+	}
+}

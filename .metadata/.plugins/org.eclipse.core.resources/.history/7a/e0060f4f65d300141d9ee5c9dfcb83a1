@@ -1,0 +1,5 @@
+package com.anemortalkid.csl.data.wrappers;
+
+public class CSLTeamRoster {
+
+}

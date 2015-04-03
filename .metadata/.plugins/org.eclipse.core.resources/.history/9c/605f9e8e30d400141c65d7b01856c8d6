@@ -1,0 +1,5 @@
+package com.anemortalkid.csl.json;
+
+public class JacksonExample {
+
+}

@@ -1,0 +1,70 @@
+package com.anemortalkid.cs.data.records;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.SC2Race;
+
+public class CSL1sPlayerRecord {
+
+	private Map<SC2Race, ConcreteRecord> recordsByRace;
+	private CSLPlayer player;
+	private int totalWins;
+	private int totalLosses;
+
+	public CSL1sPlayerRecord(CSLPlayer player) {
+		this.player = player;
+		recordsByRace = new HashMap<SC2Race, ConcreteRecord>();
+		// init
+		for (SC2Race race : SC2Race.values()) {
+			recordsByRace.put(race, new ConcreteRecord());
+		}
+	}
+
+	/**
+	 * Logs a match record
+	 * 
+	 * @param singleMatchRecord
+	 */
+	public void logMatchRecord(CSLSingleMatchRecord singleMatchRecord) {
+		ConcreteRecord raceRecord = recordsByRace.get(singleMatchRecord
+				.getOpponentRace());
+		if (singleMatchRecord.wonMatch())
+			raceRecord.addWin();
+		else
+			raceRecord.addLoss();
+	}
+
+	public CSLPlayer getPlayer() {
+		return player;
+	}
+
+	public Map<SC2Race, ConcreteRecord> getRecordsByRace() {
+		return recordsByRace;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+
+		StringBuilder recordBuilder = new StringBuilder();
+		int totalwins = 0;
+		int totalloss = 0;
+		for (SC2Race race : SC2Race.values()) {
+			ICSLFilteredRecord raceRecord = recordsByRace.get(race);
+			if (raceRecord == null) {
+				raceRecord = new ConcreteRecord();
+			}
+			totalwins += raceRecord.getWins();
+			totalloss += raceRecord.getLosses();
+			recordBuilder.append("vs " + race + ":" + raceRecord);
+			recordBuilder.append("\n");
+		}
+		sb.append("Player: " + player.toString() + "\n");
+		sb.append("Overall: (" + totalwins + "-" + totalloss + ")\n");
+		sb.append(recordBuilder.toString());
+		return sb.toString();
+	}
+
+}

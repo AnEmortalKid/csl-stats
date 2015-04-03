@@ -1,0 +1,10 @@
+package com.anemortalkid.cs.data.records;
+
+/**
+ * 
+ * @author JMonterrubio
+ *
+ */
+public class ConcreteRecord extends AbstractCSLFilteredRecord {
+
+}

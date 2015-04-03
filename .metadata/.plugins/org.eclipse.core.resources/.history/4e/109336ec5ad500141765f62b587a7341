@@ -1,0 +1,7 @@
+package com.anemortalkid.csl.resources;
+
+public class URLResources {
+
+	private static final String TEAM_URL = "http://cstarleague.com/sc2/teams/";
+	
+}

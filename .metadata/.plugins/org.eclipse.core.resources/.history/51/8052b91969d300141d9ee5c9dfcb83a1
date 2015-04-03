@@ -1,0 +1,296 @@
+package com.anemortalkid.csl.pagescrub;
+
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Attributes;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import com.anemortalkid.cs.data.records.CSLSingleMatchRecord;
+import com.anemortalkid.cs.data.records.CSLTeamMatchRecord;
+import com.anemortalkid.cs.data.records.ICSLMatchRecord;
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.SC2Race;
+import com.anemortalkid.csl.data.util.CSLPageScrubUtils;
+import com.anemortalkid.csl.data.wrappers.CSLTeamMatchRecordHistory;
+
+/**
+ * Parses a single match page and returns a list of {@link ICSLMatchRecord}
+ * 
+ * @author JMonterrubio
+ *
+ */
+public class MatchHistoryScrubber implements
+		IScrubber<CSLTeamMatchRecordHistory> {
+
+	private final Logger LOGGER = Logger.getLogger(MatchHistoryScrubber.class
+			.getName());
+	private static final String MATCH_URL = "http://cstarleague.com/sc2/matches/";
+
+	private String matchID;
+	private String teamID;
+	private Document csldoc;
+
+	private MatchSide searchSide;
+	private MatchSide opponentSide;
+	private Element currentRankings;
+
+	/**
+	 * Creates a {@link MatchHistoryScrubber} for the desired match which will
+	 * compute the match history for the given team
+	 * 
+	 * @param matchID
+	 *            the id for the match, which is the numerical value found in
+	 *            {@code http://cstarleague.com/sc2/matches/####}
+	 * @param teamID
+	 *            the id for the team for which we should compute the history of
+	 *            wins and losses
+	 */
+	public MatchHistoryScrubber(String matchID, String teamID) {
+		this.matchID = matchID;
+		this.teamID = teamID;
+	}
+
+	/**
+	 * Runs this scrubber
+	 */
+	public CSLTeamMatchRecordHistory scrub() {
+		CSLTeamMatchRecordHistory recordHistory = new CSLTeamMatchRecordHistory(
+				teamID);
+		csldoc = null;
+
+		// match was a bye
+		if (matchID.contains("#"))
+			return recordHistory;
+
+		try {
+			csldoc = Jsoup.connect(MATCH_URL + matchID).userAgent("Mozilla")
+					.get();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if (csldoc == null)
+			return recordHistory;
+		LOGGER.info(MessageFormat.format(
+				"Match:<{0}>, Team:<{1}> - Finding team side", matchID, teamID));
+		searchSide = findTeamSide();
+		if (searchSide == null)
+			return recordHistory;
+		opponentSide = searchSide == MatchSide.LEFT ? MatchSide.RIGHT
+				: MatchSide.LEFT;
+		scrubMatchTable(recordHistory);
+		LOGGER.info(MessageFormat.format(
+				"Match:<{0}>, Team:<{1}> - Done scrubbing match history",
+				matchID, teamID));
+		return recordHistory;
+	}
+
+	private MatchSide findTeamSide() {
+		// Scrub the side to figure out which one is our team
+		currentRankings = csldoc.getElementById("current-rankings");
+
+		Elements asides = currentRankings.getElementsByTag("aside");
+		for (Element aside : asides) {
+			Elements articles = aside.getElementsByTag("article");
+			for (Element article : articles) {
+				String articleClass = article.attr("class");
+				Elements schools = article
+						.getElementsByAttributeValueContaining("class",
+								"school");
+				for (Element school : schools) {
+					Elements anchors = school.getElementsByTag("a");
+					for (Element anchor : anchors) {
+						Attributes attributes = anchor.attributes();
+						String href = attributes.get("href");
+						if (href.contains(teamID)) {
+							if (articleClass.contains("ready-panel"))
+								return MatchSide.LEFT;
+							else if (articleClass.contains("waiting-panel"))
+								return MatchSide.RIGHT;
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	private void scrubMatchTable(CSLTeamMatchRecordHistory recordHistory) {
+		LOGGER.info(MessageFormat.format(
+				"Match:<{0}>, Team:<{1}> - Scrubbing Match History", matchID,
+				teamID));
+		Elements tables = currentRankings.getElementsByAttributeValue("class",
+				"table");
+		Element scoreTable = tables.first();
+		Elements evenRows = scoreTable.getElementsByAttributeValueContaining(
+				"class", "row even");
+		Elements oddRows = scoreTable.getElementsByAttributeValueContaining(
+				"class", "row odd");
+		Elements rows = new Elements();
+		rows.addAll(evenRows);
+		rows.addAll(oddRows);
+		for (Element row : rows) {
+			Element ulGroup = row.getElementsByAttributeValue("class", "group")
+					.first();
+
+			Elements players = ulGroup.getElementsByAttributeValueContaining(
+					"class", searchSide + "-player");
+			if (players.size() == 1) {
+				parse1v1RowHistory(ulGroup, recordHistory);
+			} else if (players.size() == 2) {
+				parse2v2RowHistory(ulGroup, recordHistory);
+			}
+		}
+	}
+
+	private void parse2v2RowHistory(Element ulGroup,
+			CSLTeamMatchRecordHistory recordHistory) {
+		LOGGER.info(MessageFormat.format(
+				"Match:<{0}>, Team:<{1}> - Parsing 2v2 History", matchID,
+				teamID));
+		Elements playerLIS = ulGroup.getElementsByAttributeValueContaining(
+				"class", searchSide + "-player");
+		List<CSLPlayer> players = new ArrayList<CSLPlayer>();
+		for (Element playerLI : playerLIS)
+			players.add(CSLPageScrubUtils.getCSLPlayerFromLI(playerLI));
+
+		Element resultLi = ulGroup.getElementsByAttributeValueContaining(
+				"class", "record-active").first();
+		MatchSide sideWon = getWinningSide(resultLi);
+
+		// match was not played
+		if (sideWon == null) {
+			return;
+		}
+
+		Elements opponentPlayerLIS = ulGroup
+				.getElementsByAttributeValueContaining("class", opponentSide
+						+ "-player");
+		// opponents forfeit
+		if (opponentPlayerLIS.size() == 1) {
+			CSLTeamMatchRecord cslTeamMatchRecord = new CSLTeamMatchRecord(
+					players.get(0), players.get(1));
+			cslTeamMatchRecord.wonMatch();
+			System.out.println("Opponent forfeited match");
+			recordHistory.addMatchRecord(cslTeamMatchRecord);
+			return;
+		} else if (playerLIS.size() == 1) {
+			// can't parse, was a forfeit
+			System.out.println("Forfeiting, no 2s submitted");
+			return;
+		}
+
+		List<SC2Race> oppRace = new ArrayList<SC2Race>();
+		for (Element opponentPlayerLI : opponentPlayerLIS)
+			oppRace.add(getPlayerRace(opponentPlayerLI));
+
+		CSLTeamMatchRecord twosRecord = new CSLTeamMatchRecord(players.get(0),
+				players.get(1), oppRace.get(0), oppRace.get(1));
+		if (sideWon == searchSide)
+			twosRecord.setMatchWon(true);
+		LOGGER.info(MessageFormat.format(
+				"Match:<{0}>, Team:<{1}> - Adding 2v2 Record: <{2}>", matchID,
+				teamID, twosRecord));
+		recordHistory.addMatchRecord(twosRecord);
+	}
+
+	private void parse1v1RowHistory(Element ulGroup,
+			CSLTeamMatchRecordHistory recordHistory) {
+		LOGGER.info(MessageFormat.format(
+				"Match:<{0}>, Team:<{1}> - Parsing 1v1 History", matchID,
+				teamID));
+		Element playerLI = ulGroup.getElementsByAttributeValueContaining(
+				"class", searchSide + "-player").first();
+
+		Element opponentPlayerLI = ulGroup
+				.getElementsByAttributeValueContaining("class",
+						opponentSide + "-player").first();
+
+		Element resultLi = ulGroup.getElementsByAttributeValueContaining(
+				"class", "record-active").first();
+
+		MatchSide sideWon = getWinningSide(resultLi);
+		// match was not played
+		if (sideWon == null)
+			return;
+
+		CSLPlayer player = CSLPageScrubUtils.getCSLPlayerFromLI(playerLI);
+		if (player == null) {
+			// this match was forfeit but a team won
+			return;
+		}
+
+		// find opponent race
+		SC2Race opponentRace = getPlayerRace(opponentPlayerLI);
+		CSLSingleMatchRecord matchRecord = new CSLSingleMatchRecord(player,
+				opponentRace);
+
+		// find match result
+		if (sideWon == searchSide)
+			matchRecord.setMatchWon(true);
+		LOGGER.info(MessageFormat.format(
+				"Match:<{0}>, Team:<{1}> - Adding 1v1 Record: <{2}>", matchID,
+				teamID, matchRecord));
+		recordHistory.addMatchRecord(matchRecord);
+	}
+
+	private SC2Race getPlayerRace(Element opponetnPlayerLI) {
+		String oppPlayerLIClass = opponetnPlayerLI.attr("class");
+		if (oppPlayerLIClass.contains("zerg"))
+			return SC2Race.ZERG;
+		if (oppPlayerLIClass.contains("protoss"))
+			return SC2Race.PROTOSS;
+		if (oppPlayerLIClass.contains("terran"))
+			return SC2Race.TERRAN;
+		return SC2Race.RANDOM;
+	}
+
+	private MatchSide getWinningSide(Element resultLI) {
+		Element leftResult = resultLI.getElementsByAttributeValueContaining(
+				"class", "left").first();
+		Element rightResult = resultLI.getElementsByAttributeValueContaining(
+				"class", "right").first();
+
+		// determine if the result was 0-0 meaning it wasn't played
+		String leftNum = leftResult.text();
+		String rightNum = rightResult.text();
+
+		// Only possibility is 0s so match was forfeit
+		if (leftNum.equals(rightNum))
+			return null;
+
+		int leftScore = Integer.parseInt(leftNum);
+		int rightScore = Integer.parseInt(rightNum);
+		if (leftScore == 1)
+			return MatchSide.LEFT;
+		if (rightScore == 1)
+			return MatchSide.RIGHT;
+		return null;
+	}
+
+	private enum MatchSide {
+		LEFT("left"), RIGHT("right");
+		private String str;
+
+		private MatchSide(String str) {
+			this.str = str;
+		}
+
+		@Override
+		public String toString() {
+			return str;
+		}
+	}
+
+	public static void main(String[] args) {
+		MatchHistoryScrubber matchHistoryScrubber = new MatchHistoryScrubber(
+				"6971", "3332");
+		matchHistoryScrubber.scrub();
+	}
+}

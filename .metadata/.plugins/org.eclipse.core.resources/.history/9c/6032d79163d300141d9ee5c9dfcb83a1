@@ -1,0 +1,16 @@
+package com.anemortalkid.csl.pagescrub;
+
+import java.util.List;
+
+/**
+ * An {@link IScrubber} is a page scrubber which scrubs a particular url for
+ * specific data, that data is returned once the scrub method is called
+ * 
+ * @author JMonterrubio
+ *
+ * @param <S>
+ */
+public interface IScrubber<S> {
+
+	List<S> scrub();
+}

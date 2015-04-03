@@ -1,0 +1,78 @@
+package com.anemortalkid.csl.pagescrub;
+
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.Set;
+import java.util.logging.Logger;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import com.anemortalkid.csl.data.wrappers.CSLTeamMatchHistory;
+import com.anemortalkid.csl.resources.URLResources;
+
+public class TeamMatchHistoryScrubber implements IScrubber<CSLTeamMatchHistory> {
+
+	private final Logger LOGGER = Logger.getLogger(TeamMatchHistoryScrubber.class
+			.getName());
+	private Document csldoc;
+	private String teamID;
+
+	/**
+	 * Constructs a {@link TeamMatchHistoryScrubber} which returns the match
+	 * history for the given team
+	 * 
+	 * @param teamID
+	 *            the numeric ID for the team, found in the team URL link
+	 *            {@code http://cstarleague.com/sc2/teams/####} where ### is the
+	 *            id for a given team
+	 * 
+	 */
+	public TeamMatchHistoryScrubber(String teamID) {
+		this.teamID = teamID;
+	}
+
+	/**
+	 * Returns a List of matchIDs that are found within the given team's match
+	 * history
+	 */
+	public CSLTeamMatchHistory scrub() {
+		LOGGER.fine(MessageFormat.format(
+				"Team: <{0}> - Finding Match History IDs", teamID));
+		CSLTeamMatchHistory matchHistory = new CSLTeamMatchHistory(teamID);
+		try {
+			csldoc = Jsoup.connect(URLResources.TEAM_URL + teamID).userAgent("Mozilla")
+					.get();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (csldoc == null)
+			return matchHistory;
+
+		Elements leagues = csldoc.getElementsByAttributeValue("id", "league");
+		Element matchHistoryElem = leagues.get(1);
+		Elements rowGroups = matchHistoryElem.getElementsByAttributeValue(
+				"class", "row group");
+		for (Element rowGroup : rowGroups) {
+			Element teamAnchor = rowGroup.getElementsByTag("a").first();
+			String href = teamAnchor.attr("href");
+			String matchId = href.replaceAll("/sc2/matches/", "");
+			matchHistory.addMatchId(matchId);
+			LOGGER.fine(MessageFormat.format(
+					"Team: <{0}> MatchId:<{1}> -Adding ID", teamID));
+		}
+		return matchHistory;
+	}
+
+	public static void main(String[] args) {
+		TeamMatchHistoryScrubber teamMatchHistoryScrubber = new TeamMatchHistoryScrubber(
+				"3332");
+		Set<String> matchIds = teamMatchHistoryScrubber.scrub()
+				.getTeamMatchHistory();
+		System.out.println("MatchIDS:" + matchIds);
+	}
+
+}

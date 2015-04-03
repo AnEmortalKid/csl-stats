@@ -1,0 +1,12 @@
+package com.anemortalkid.cs.data.records;
+
+public interface ICSLMatchRecord {
+
+	boolean wonMatch();
+
+	void setMatchWon(boolean matchWon);
+
+	enum MatchRecordType {
+		ONE_VS_ONE, TWO_VS_TWO;
+	}
+}

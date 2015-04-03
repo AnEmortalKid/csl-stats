@@ -1,0 +1,17 @@
+package com.anemortalkid.csl.data.wrappers;
+
+/**
+ * TODO: finish -> A wrapper for a List<CSLPlayer>
+ * 
+ * @author JMonterrubio
+ *
+ */
+public class CSLTeamRoster {
+
+	private Set<CSLPlayer> players;
+	private String teamID;
+
+	public CSLTeamRoster(String teamID) {
+		this.teamID = teamID;
+	}
+}

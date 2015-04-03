@@ -1,0 +1,19 @@
+package com.anemortalkid.csl.data;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class CSLTeamMatchHistory {
+
+	private List<String> matchIDs;
+
+	public List<String> getTeamMatchHistory() {
+		return Collections.unmodifiableList(getMatchIds());
+	}
+
+	private List<String> getMatchIds()
+	{
+		return matchIDs == null ? matchIDs = new ArrayList<String>();
+	}
+}

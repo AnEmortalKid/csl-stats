@@ -1,0 +1,95 @@
+package com.anemortalkid.csl.stats.ui;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+
+import javax.swing.AbstractAction;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
+import com.anemortalkid.csl.stats.CSLTeamStatsGather;
+import com.anemortalkid.csl.stats.CSLTeamURLEnum;
+
+public class ShittyUI extends JFrame {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JPanel mainPanel = new JPanel(new GridLayout(0, 1));
+	private JPanel inputPanel = new JPanel(new BorderLayout());
+	private JPanel outputPanel = new JPanel(new BorderLayout());
+	private JTextArea dataArea = new JTextArea();
+
+	public ShittyUI() {
+		this.setTitle("CSL Shitty Stats Generator");
+		buildInputPanel();
+		buildOutputPanel();
+		mainPanel.add(inputPanel);
+		mainPanel.add(outputPanel);
+		this.add(mainPanel);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+
+	private void buildInputPanel() {
+		JComboBox<CSLTeamURLEnum> teamURLS = new JComboBox<CSLTeamURLEnum>();
+		for (CSLTeamURLEnum teamUrl : CSLTeamURLEnum.values())
+			teamURLS.addItem(teamUrl);
+		JButton gatherButton = new JButton();
+		gatherButton.setAction(new CSLGatherStatsAction(teamURLS));
+		inputPanel.setBackground(Color.red);
+		inputPanel.add(teamURLS, BorderLayout.CENTER);
+		inputPanel.add(gatherButton, BorderLayout.EAST);
+	}
+
+	private void buildOutputPanel() {
+		JScrollPane scrollPane = new JScrollPane(dataArea);
+		outputPanel.setBackground(Color.CYAN);
+		outputPanel.add(scrollPane, BorderLayout.CENTER);
+	}
+
+	private class CSLGatherStatsAction extends AbstractAction {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private JComboBox<CSLTeamURLEnum> teamURLComboBox;
+		private CSLTeamURLEnum previousTeamEnum;
+
+		private CSLGatherStatsAction(JComboBox<CSLTeamURLEnum> teamURLComboBox) {
+			super("Gather Stats");
+			this.teamURLComboBox = teamURLComboBox;
+		}
+
+		public void actionPerformed(ActionEvent arg0) {
+			final CSLTeamURLEnum teamEnum = (CSLTeamURLEnum) teamURLComboBox
+					.getSelectedItem();
+			// lets not do extra work
+			if (previousTeamEnum == teamEnum)
+				return;
+
+			// clear it
+			dataArea.setText("");
+			previousTeamEnum = teamEnum;
+			CSLTeamStatsGather gatherer = new CSLTeamStatsGather(
+					teamEnum.getSchoolName(), teamEnum.getCSLTeamID(),
+					System.out);
+			gatherer.gatherStats();
+			dataArea.setText(gatherer.getTeamRecord());
+			outputPanel.repaint();
+		}
+	}
+
+	public static void main(String[] args) {
+		ShittyUI shittyUI = new ShittyUI();
+		shittyUI.setSize(400, 400);
+		shittyUI.setLocationRelativeTo(null);
+		shittyUI.setVisible(true);
+	}
+}

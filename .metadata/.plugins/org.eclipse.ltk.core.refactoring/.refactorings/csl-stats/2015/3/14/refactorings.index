@@ -1,0 +1,8 @@
+1427607808525	Move folder
+1427608006029	Delete element
+1427608516735	Rename field 'cslTeamId'
+1427608520845	Rename method 'setCslTeamId'
+1427608529034	Rename field 'schoolName'
+1427610273851	Rename local variable 'recordsByrace'
+1427611365210	Extract method 'extracted'
+1427611776714	Rename method 'get1v1RecordByRace'

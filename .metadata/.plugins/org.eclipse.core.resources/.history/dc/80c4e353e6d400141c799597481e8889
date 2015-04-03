@@ -1,0 +1,63 @@
+package com.anemortalkid.csl.data;
+
+public class CSLPlayer {
+
+	private String cslID;
+	private String cslName;
+
+	/**
+	 * TODO: doc
+	 * 
+	 * @param cslID
+	 * @param cslName
+	 */
+	public CSLPlayer(String cslID, String cslName) {
+		this.cslID = cslID;
+		this.cslName = cslName;
+	}
+
+	public String getCslID() {
+		return cslID;
+	}
+
+	public String getCslName() {
+		return cslName;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((cslID == null) ? 0 : cslID.hashCode());
+		result = prime * result + ((cslName == null) ? 0 : cslName.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		CSLPlayer other = (CSLPlayer) obj;
+		if (cslID == null) {
+			if (other.cslID != null)
+				return false;
+		} else if (!cslID.equals(other.cslID))
+			return false;
+		if (cslName == null) {
+			if (other.cslName != null)
+				return false;
+		} else if (!cslName.equals(other.cslName))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return cslName + "(" + cslID + ")";
+	}
+	
+}

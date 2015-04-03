@@ -1,0 +1,5 @@
+package com.anemortalkid.csl.data;
+
+public enum SC2TeamRaces {
+
+}

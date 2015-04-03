@@ -1,0 +1,127 @@
+package com.anemortalkid.csl.stats;
+
+public enum CSLTeamEnum {
+
+	/**
+	 * West Division
+	 */
+	//
+	UCI("UC Irvine", "3581"),
+	//
+	UCB("UC Berkeley", "6183"),
+	//
+	UW("University of Washington", "8764"),
+	//
+	SJSU("San Jose State", "3332"),
+	//
+	UCD("University of California, Davis", "1494"),
+	//
+	UCSD("University of California, San Diego", "9437"),
+	//
+	UCLA("UCLA", "1708"),
+	//
+	UAZ("University of Arizona", "9299"),
+
+	/**
+	 * MidWest
+	 */
+	//
+	GIT("Georgia Institute of Technology", "4267"),
+	//
+	UC("University of Chicago", "4639"),
+	//
+	OSU("Ohio State", "3424"),
+	//
+	UTA("UT Austin", "7853"),
+	//
+	Rice("Rice University", "3087"),
+	//
+	UWS("U Wisoconsin-stout", "8844"),
+	//
+	ColoradoBoulder("University of Colorado, Boulder", "7465"),
+	//
+	DUKE("Duke University", "2588"),
+
+	/**
+	 * Northeast
+	 */
+	//
+	Waterloo("University of Waterloo", "3373"),
+	//
+	Ryerson("Ryerson Univesity", "3261"),
+	//
+	Toronto("University of Toronto", "5656"),
+	//
+	McMaster("McMaster University", "4607"),
+	//
+	UMCP("University of Maryland, College Park", "4708"),
+	//
+	PSU("Pennsylvania State", "6699"),
+	//
+	Drexel("Drexel University", "7643"),
+	//
+	Dalhousie("Dalhousie Unviersity", "9571"),
+
+	/**
+	 * East
+	 */
+	UF("University of Florida", "2397"),
+	//
+	GWU("George Washington", "1746"),
+	//
+	NYU("New York University", "2328"),
+	//
+	MIT("MIT", "4260"),
+	//
+	UCF("University of Central Florida", "4424"),
+	//
+	RIT("Rocherster Institute of Technology", "2443"),
+	//
+	CU("Columbia University", "7106"),
+	//
+	UVA("University of Virginia", "8116"),
+
+	/**
+	 * Division 2
+	 */
+	UNM("University of New Mexico", "6395"),
+
+	;
+
+	private String schoolName;
+	private String cslTeamID;
+
+	private CSLTeamEnum(String schoolName, String cslID) {
+		this.schoolName = schoolName;
+		this.cslTeamID = cslID;
+	}
+
+	@Override
+	public String toString() {
+		return schoolName + "(TeamID:" + cslTeamID + ")";
+	}
+
+	/**
+	 * A String in the form #### where the number corresponds to this team's ID
+	 * in the CSL site, the full url for the team can then be composed of:
+	 * 
+	 * <pre>
+	 * http://cstarleague.com/sc2/teams/####
+	 * </pre>
+	 * 
+	 * @return the numerical ID for the team within the CSL Site
+	 */
+	public String getCSLTeamID() {
+		return cslTeamID;
+	}
+
+	/**
+	 * The name of the school that this team represents
+	 * 
+	 * @return the name of the school that this team represents
+	 */
+	public String getSchoolName() {
+		return schoolName;
+	}
+
+}

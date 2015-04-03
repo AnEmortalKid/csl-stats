@@ -1,0 +1,55 @@
+package com.anemortalkid.csl.data;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+public enum SC2TeamRaces {
+
+	// zt
+	ZERG_TERRAN,
+
+	// zp
+	ZERG_PROTOSS,
+
+	// zr
+	ZERG_RANDOM,
+
+	// tp
+	TERRAN_PROTOSS,
+
+	// tr
+	TERRAN_RANDOM,
+
+	// pr
+	PROTOSS_RANDOM, ;
+
+	public static SC2TeamRaces getRacesFor(Set<SC2Race> races) {
+		if (races.contains(SC2Race.ZERG)) {
+			if (races.contains(SC2Race.TERRAN)) {
+				return ZERG_TERRAN;
+			}
+			if (races.contains(SC2Race.PROTOSS)) {
+				return ZERG_PROTOSS;
+			}
+			if (races.contains(SC2Race.RANDOM)) {
+				return ZERG_RANDOM;
+			}
+		}
+
+		if (races.contains(SC2Race.TERRAN)) {
+			if (races.contains(SC2Race.PROTOSS)) {
+				return TERRAN_PROTOSS;
+			}
+			if (races.contains(SC2Race.RANDOM)) {
+				return TERRAN_RANDOM;
+			}
+		}
+
+		if (races.contains(SC2Race.PROTOSS)) {
+			if (races.contains(SC2Race.RANDOM))
+				return PROTOSS_RANDOM;
+		}
+	}
+}

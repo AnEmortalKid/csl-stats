@@ -1,0 +1,6 @@
+package com.anemortalkid.csl.data;
+
+public class CSLTeamMatchHistory {
+
+	private List<String> matchIDs;
+}

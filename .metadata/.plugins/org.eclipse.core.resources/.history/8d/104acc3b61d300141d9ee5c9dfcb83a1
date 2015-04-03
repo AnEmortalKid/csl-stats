@@ -1,0 +1,90 @@
+package com.anemortalkid.csl.stats;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.anemortalkid.cs.data.records.CSL1sPlayerRecord;
+import com.anemortalkid.cs.data.records.CSL2sTeamRecord;
+import com.anemortalkid.cs.data.records.CSLSingleMatchRecord;
+import com.anemortalkid.cs.data.records.CSLTeamMatchRecord;
+import com.anemortalkid.cs.data.records.RaceRecord;
+import com.anemortalkid.cs.data.records.TeamRecord;
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.CSLTeamData;
+import com.anemortalkid.csl.data.SC2Race;
+import com.anemortalkid.csl.pagescrub.MatchHistoryScrubber;
+import com.anemortalkid.csl.pagescrub.TeamMatchHistoryScrubber;
+import com.anemortalkid.csl.pagescrub.TeamRosterScrubber;
+
+//TODO: add caching
+public class CSLTeamStatsGather {
+
+	private static final String MATCHURL = "http://cstarleague.com/sc2/matches/";
+	private OutputStream debugStream;
+
+	private String teamID;
+
+	private boolean gathering;
+	private String teamURL;
+	private String schoolName;
+	private CSLTeamData teamData;
+
+	public CSLTeamStatsGather(String schoolName, String teamID) {
+		this(schoolName, teamID, null);
+	}
+
+	public CSLTeamStatsGather(String schoolName, String teamID,
+			OutputStream debugStream) {
+		this.schoolName = schoolName;
+		this.teamURL = teamURL;
+		this.debugStream = debugStream;
+		this.teamID = teamURL.replaceAll("http://cstarleague.com/sc2/teams/",
+				"");
+	}
+
+	/**
+	 * Runs the thing
+	 */
+	public void gatherStats() {
+		if (gathering)
+			return;
+
+		gathering = true;
+		teamData = new CSLTeamData(schoolName, teamURL);
+		teamData.gatherMatchHistory();
+		gathering = false;
+	}
+
+	private void writeToStream(String str) {
+		if (debugStream != null)
+			try {
+				debugStream.write(str.getBytes());
+				debugStream.flush();
+			} catch (IOException e) {
+				// shh
+			}
+	}
+
+	public static void main(String[] args) {
+		CSLTeamStatsGather cslTeamStatsGather = new CSLTeamStatsGather(
+				"SanJoseState", "http://cstarleague.com/sc2/teams/3332",
+				System.out);
+		cslTeamStatsGather.gatherStats();
+		cslTeamStatsGather.printRecords();
+	}
+
+	public String getTeamRecord() {
+		return teamData.teamRecordToString();
+	}
+
+	private void printRecords() {
+		String teamRecordToString = teamData.teamRecordToString();
+		System.out.println(teamRecordToString);
+	}
+}

@@ -1,0 +1,264 @@
+package com.anemortalkid.csl.data.util;
+
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+import com.anemortalkid.cs.data.records.CSL1sPlayerRecord;
+import com.anemortalkid.cs.data.records.CSL2sTeamRecord;
+import com.anemortalkid.cs.data.records.ConcreteRecord;
+import com.anemortalkid.csl.data.CSLPlayer;
+import com.anemortalkid.csl.data.CSLTeamData;
+import com.anemortalkid.csl.data.SC2Race;
+
+import static com.anemortalkid.csl.data.SC2Race.*;
+
+public class CSLHtmlExportUtils {
+
+	/**
+	 * <pre>
+	 * <!DOCTYPE html>
+	 * <html>
+	 * <body>
+	 * 
+	 * <table style="width:100%">
+	 *   <tr>
+	 *     <td>Jill</td>
+	 *     <td>Smith</td>		
+	 *     <td>50</td>
+	 *   </tr>
+	 *   <tr>
+	 *     <td>Eve</td>
+	 *     <td>Jackson</td>		
+	 *     <td>94</td>
+	 *   </tr>
+	 *   <tr>
+	 *     <td>John</td>
+	 *     <td>Doe</td>		
+	 *     <td>80</td>
+	 *   </tr>
+	 * </table>
+	 * 
+	 * </body>
+	 * </html>
+	 * </pre>
+	 */
+	private static final String sample = "bullstring";
+
+	public static void generateHTMLPage(CSLTeamData teamData) {
+		HTMLDocGenerator docGen = new HTMLDocGenerator(teamData);
+		docGen.buildDocument();
+	}
+
+	private static class HTMLDocGenerator {
+		private StringBuilder docBuilder;
+		private CSLTeamData teamData;
+
+		private HTMLDocGenerator(CSLTeamData teamData) {
+			this.teamData = teamData;
+			docBuilder = new StringBuilder();
+			docBuilder.append("<html>\n");
+			generateStyle();
+			docBuilder.append("<body>\n");
+			generateContent();
+			docBuilder.append("</html>\n");
+			docBuilder.append("</body>\n");
+		}
+
+		public void generateContent() {
+			// table header
+			docBuilder.append("<h1>" + teamData.getTeamName()
+					+ "'s Records</h1>");
+			docBuilder.append("<h2>1v1 Records</h2>");
+			generateSinglesRecords();
+			docBuilder.append("<h2>2v2 Records</h2>");
+			generateDoublesRecords();
+		}
+
+		private void generateSinglesRecords() {
+			docBuilder.append("<table>\n");
+			generateTableHeader("Player", "Overall", "v Zerg", "v Protoss",
+					"v Terran", "v Random");
+
+			// Sort list
+			List<CSLPlayer> players = new ArrayList<CSLPlayer>();
+			for (CSL1sPlayerRecord playerRecord : teamData
+					.getSinglesRecordById().values()) {
+				players.add(playerRecord.getPlayer());
+			}
+			Collections.sort(players);
+
+			for (CSLPlayer player : players) {
+				CSL1sPlayerRecord playerRecord = teamData
+						.getSinglesRecordById().get(player.getCslID());
+				String overall = playerRecord.getTotalWins() + "-"
+						+ playerRecord.getTotalLosses();
+				Map<SC2Race, ConcreteRecord> recordsByRace = playerRecord
+						.getRecordsByRace();
+				String zergRecord = recordToString(recordsByRace
+						.get(SC2Race.ZERG));
+				String protossRecord = recordToString(recordsByRace
+						.get(SC2Race.PROTOSS));
+				String terranRecord = recordToString(recordsByRace
+						.get(SC2Race.TERRAN));
+				String randomRecord = recordToString(recordsByRace
+						.get(SC2Race.RANDOM));
+
+				generateDataRow(player.getCslName(), overall, zergRecord,
+						protossRecord, terranRecord, randomRecord);
+			}
+			docBuilder.append("</table>\n");
+		}
+
+		private void generateDoublesRecords() {
+			docBuilder.append("<table>\n");
+			generateTableHeader("Players", "Overall", "v ZT", "v ZP", "v ZR",
+					"v PT", "v PR", "v TR");
+			Set<SC2Race> zt = getSetWith(ZERG, TERRAN);
+			Set<SC2Race> zp = getSetWith(ZERG, PROTOSS);
+			Set<SC2Race> zr = getSetWith(ZERG, RANDOM);
+			Set<SC2Race> pt = getSetWith(PROTOSS, TERRAN);
+			Set<SC2Race> pr = getSetWith(PROTOSS, RANDOM);
+			Set<SC2Race> tr = getSetWith(TERRAN, RANDOM);
+
+			for (CSL2sTeamRecord teamRecord : teamData.getTeamRecordByIds()
+					.values()) {
+				List<String> pNames = new ArrayList<String>();
+				for (CSLPlayer p : teamRecord.getPlayers())
+					pNames.add(p.getCslName());
+				Collections.sort(pNames);
+				String playersString = pNames.get(0) + " & " + pNames.get(1);
+
+				String overall = recordToString(teamRecord.getTotalWins(),
+						teamRecord.getTotalLosses());
+
+				ConcreteRecord ztRecord = teamRecord.getRecordByRaces(zt);
+				String ztRecordStr = ztRecord == null ? "0 - 0"
+						: recordToString(ztRecord);
+
+				ConcreteRecord zpRecord = teamRecord.getRecordByRaces(zp);
+				String zpRecordStr = zpRecord == null ? "0 - 0"
+						: recordToString(zpRecord);
+
+				ConcreteRecord zrRecord = teamRecord.getRecordByRaces(zr);
+				String zrRecordStr = zrRecord == null ? "0 - 0"
+						: recordToString(zrRecord);
+
+				ConcreteRecord ptRecord = teamRecord.getRecordByRaces(pt);
+				String ptRecordStr = ptRecord == null ? "0 - 0"
+						: recordToString(ptRecord);
+
+				ConcreteRecord prRecord = teamRecord.getRecordByRaces(pr);
+				String prRecordStr = prRecord == null ? "0 - 0"
+						: recordToString(prRecord);
+
+				ConcreteRecord trRecord = teamRecord.getRecordByRaces(tr);
+				String trRecordStr = trRecord == null ? "0 - 0"
+						: recordToString(trRecord);
+				generateDataRow(playersString, overall, ztRecordStr,
+						zpRecordStr, zrRecordStr, ptRecordStr, prRecordStr,
+						trRecordStr);
+			}
+			docBuilder.append("</table>\n");
+		}
+
+		private Set<SC2Race> getSetWith(SC2Race... races) {
+			Set<SC2Race> raceSet = new TreeSet<SC2Race>();
+			for (SC2Race race : races)
+				raceSet.add(race);
+			return raceSet;
+		}
+
+		private void generateTableHeader(String... headers) {
+			docBuilder.append("\t</tr>\n");
+			generateInnerTH(headers);
+			docBuilder.append("\t</tr>\n");
+		}
+
+		private void generateDataRow(String... rowData) {
+			docBuilder.append("\t<tr>\n");
+			generateInnerTD(rowData);
+			docBuilder.append("\t</tr>\n");
+		}
+
+		private void generateInnerTH(String... tdData) {
+			for (String data : tdData) {
+				docBuilder.append("\t\t<th>");
+				docBuilder.append(data);
+				docBuilder.append("\t\t</th>\n");
+			}
+		}
+
+		private void generateInnerTD(String... rowData) {
+			for (String data : rowData) {
+				docBuilder.append("\t\t<td>");
+				docBuilder.append(data);
+				docBuilder.append("\t\t</td>\n");
+			}
+		}
+
+		private String recordToString(int wins, int loss) {
+			return wins + " - " + loss;
+		}
+
+		private String recordToString(ConcreteRecord record) {
+			return recordToString(record.getWins(), record.getLosses());
+		}
+
+		public void buildDocument() {
+			try {
+				PrintWriter writer = new PrintWriter(
+						"C:\\Users\\JMonterrubio\\Desktop\\teamData-"
+								+ teamData.getTeamID() + ".html", "UTF-8");
+				writer.write(docBuilder.toString());
+				writer.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+		}
+
+		public void generateStyle() {
+			/**
+			 * <pre>
+			 * <style>
+			 * table {
+			 *     width:100%;
+			 * }
+			 * table, th, td {
+			 *     border: 1px solid black;
+			 *     border-collapse: collapse;
+			 * }
+			 * th, td {
+			 *     padding: 5px;
+			 *     text-align: left;
+			 * }
+			 * table tr:nth-child(even) {
+			 *     background-color: #eee;
+			 * }
+			 * table tr:nth-child(odd) {
+			 *    background-color:#fff;
+			 * }
+			 * table th	{
+			 *     background-color: black;
+			 *     color: white;
+			 * }
+			 * </style>
+			 * </pre>
+			 */
+			docBuilder.append("<style>\n");
+			docBuilder
+					.append("H1 { text-align: center } H2 { text-align: center } table {width:100%;}table, th, td {border: 1px solid black;border-collapse: collapse;}th, td {padding: 5px;text-align: left;}table tr:nth-child(even) {background-color: #eee;}table tr:nth-child(odd) {background-color:#fff;}table th	{background-color: black;color: white;}");
+			docBuilder.append("</style>\n");
+		}
+	}
+
+}

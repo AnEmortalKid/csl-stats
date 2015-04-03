@@ -1,0 +1,8 @@
+package com.anemortalkid.cs.data.records;
+
+public interface ICSLMatchRecord {
+
+	boolean wonMatch();
+
+	void setMatchWon(boolean matchWon);
+}

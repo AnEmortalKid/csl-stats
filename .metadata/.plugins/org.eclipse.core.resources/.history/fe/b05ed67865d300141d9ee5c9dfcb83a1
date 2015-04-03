@@ -1,0 +1,11 @@
+package com.anemortalkid.csl.data.wrappers;
+
+/**
+ * TODO: finish -> A wrapper for a List<ICSLMatchRecord>
+ * 
+ * @author JMonterrubio
+ *
+ */
+public class CSLTeamMatchRecordHistory {
+
+}

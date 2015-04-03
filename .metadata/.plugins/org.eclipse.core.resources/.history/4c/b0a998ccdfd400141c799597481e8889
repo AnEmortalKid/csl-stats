@@ -1,0 +1,179 @@
+package com.anemortalkid.csl.data;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.anemortalkid.cs.data.records.CSL1sPlayerRecord;
+import com.anemortalkid.cs.data.records.CSL2sTeamRecord;
+import com.anemortalkid.cs.data.records.CSLSingleMatchRecord;
+import com.anemortalkid.cs.data.records.CSLTeamMatchRecord;
+import com.anemortalkid.cs.data.records.ConcreteRecord;
+import com.anemortalkid.cs.data.records.ICSLMatchRecord;
+import com.anemortalkid.csl.pagescrub.MatchHistoryScrubber;
+import com.anemortalkid.csl.pagescrub.TeamMatchHistoryScrubber;
+import com.anemortalkid.csl.pagescrub.TeamRosterScrubber;
+
+public class CSLTeamData {
+
+	private String schoolName;
+	private String cslTeamId;
+
+	private Set<CSLPlayer> teamRoster;
+	private Map<String, CSL1sPlayerRecord> singlesRecordById;
+	private Map<Set<String>, CSL2sTeamRecord> teamRecordById;
+	private String recordAsString = null;
+	private Set<String> matchIDS;
+
+	/**
+	 * 
+	 * @param schoolName
+	 * @param cslTeamID
+	 */
+	public CSLTeamData(String schoolName, String cslTeamID) {
+		this.schoolName = schoolName;
+		cslTeamId = cslTeamID;
+		teamRoster = new HashSet<CSLPlayer>();
+		createRoster();
+	}
+
+	private void createRoster() {
+		TeamRosterScrubber teamRosterScrubber = new TeamRosterScrubber(
+				cslTeamId);
+		teamRoster = teamRosterScrubber.scrub().getTeamRoster();
+		singlesRecordById = new HashMap<String, CSL1sPlayerRecord>();
+		for (CSLPlayer player : teamRoster) {
+			singlesRecordById.put(player.getCslID(), new CSL1sPlayerRecord(
+					player));
+		}
+		teamRecordById = new HashMap<Set<CSLPlayer>, CSL2sTeamRecord>();
+	}
+
+	/**
+	 * Compiles match history
+	 */
+	public void gatherMatchHistory() {
+		TeamMatchHistoryScrubber teamMatchHistoryScrubber = new TeamMatchHistoryScrubber(
+				cslTeamId);
+		Set<String> scrubbedIds = teamMatchHistoryScrubber.scrub()
+				.getTeamMatchHistory();
+		if (matchIDS == null)
+			matchIDS = new HashSet<String>();
+		Set<String> unscrubbedIds = new HashSet<String>();
+
+		for (String foundId : scrubbedIds) {
+			if (!matchIDS.contains(foundId))
+				unscrubbedIds.add(foundId);
+		}
+		if (!unscrubbedIds.isEmpty())
+			recordAsString = null;
+		parseMatchHistoryIds(unscrubbedIds);
+	}
+
+	private void parseMatchHistoryIds(Set<String> matchIDs) {
+		for (String matchId : matchIDs) {
+			this.matchIDS.add(matchId);
+			MatchHistoryScrubber mhs = new MatchHistoryScrubber(matchId,
+					cslTeamId);
+			List<ICSLMatchRecord> matches = mhs.scrub().getMatchRecordHistory();
+			for (ICSLMatchRecord match : matches) {
+				switch (match.getMatchRecordType()) {
+				case ONE_VS_ONE:
+					recordSingleMatchRecord((CSLSingleMatchRecord) match);
+					break;
+				case TWO_VS_TWO:
+					recordTwosMatchRecord((CSLTeamMatchRecord) match);
+					break;
+				default:
+					throw new UnsupportedOperationException(
+							"Cannot handle match record type:"
+									+ match.getMatchRecordType());
+				}
+			}
+		}
+	}
+
+	private void recordSingleMatchRecord(CSLSingleMatchRecord singleMatchRecord) {
+		CSL1sPlayerRecord playerRecord = singlesRecordByPlayer
+				.get(singleMatchRecord.getPlayer());
+		playerRecord.logMatchRecord(singleMatchRecord);
+		CSL1sPlayerRecord playerRecord2 = singlesRecordById
+				.get(singleMatchRecord.getPlayer().getCslID());
+		playerRecord2.logMatchRecord(singleMatchRecord);
+	}
+
+	private void recordTwosMatchRecord(CSLTeamMatchRecord teamMatchRecord) {
+		CSL2sTeamRecord teamRecord = getTeamRecord(teamMatchRecord);
+		teamRecord.logMatchRecord(teamMatchRecord);
+	}
+
+	private CSL2sTeamRecord getTeamRecord(CSLTeamMatchRecord matchRecord) {
+		Set<CSLPlayer> team = matchRecord.getPlayers();
+		CSL2sTeamRecord teamRecord = teamRecordByPlayers.get(team);
+		if (teamRecord == null) {
+			teamRecord = new CSL2sTeamRecord(team);
+			teamRecordByPlayers.put(team, teamRecord);
+		}
+		return teamRecord;
+	}
+
+	public String teamRecordToString() {
+		if (recordAsString != null)
+			return recordAsString;
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("Player statistics for " + schoolName + "\n");
+		sb.append("-- 1v1 Records -- \n");
+		for (CSLPlayer player : teamRoster) {
+			CSL1sPlayerRecord singlesRecord = singlesRecordByPlayer.get(player);
+			if (singlesRecord == null)
+				sb.append("Player: " + player + " has no 1v1 record.\n");
+			else
+				sb.append(singlesRecord + "\n");
+		}
+		sb.append("-- 2v2 Records --\n");
+		for (Set<CSLPlayer> team : teamRecordByPlayers.keySet()) {
+			CSL2sTeamRecord teamRecord = teamRecordByPlayers.get(team);
+			sb.append(teamRecord + "\n");
+		}
+		recordAsString = sb.toString();
+		return recordAsString;
+	}
+
+	@Override
+	public String toString() {
+		return teamRecordToString();
+	}
+
+	/**
+	 * Returns the #### for the team
+	 * 
+	 * @return
+	 */
+	public String getTeamID() {
+		return cslTeamId;
+	}
+
+	public Set<CSLPlayer> getTeamRoster() {
+		return teamRoster;
+	}
+
+	public String getSchoolName() {
+		return schoolName;
+	}
+
+	public Set<String> getMatchIDS() {
+		return matchIDS;
+	}
+
+	public Map<String, CSL1sPlayerRecord> getSinglesRecordById() {
+		return singlesRecordById;
+	}
+
+	public Map<Set<CSLPlayer>, CSL2sTeamRecord> getTeamRecordByPlayers() {
+		return teamRecordByPlayers;
+	}
+
+}

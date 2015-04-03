@@ -1,0 +1,23 @@
+package com.anemortalkid.csl.data;
+
+public enum SC2TeamRaces {
+
+	//zt
+	ZERG_TERRAN,
+	
+	//zp
+	ZERG_PROTOSS,
+	
+	//zr
+	ZERG_RANDOM,
+	
+	//tp
+	TERRAN_PROTOSS,
+	
+	//tr
+	TERRAN_RANDOM,
+	
+	//pr
+	PROTOSS_RANDOM,
+	;
+}
